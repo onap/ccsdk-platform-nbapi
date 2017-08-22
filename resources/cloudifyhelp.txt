@@ -1,0 +1,141 @@
+{
+	"items":
+	[
+		{
+			"Description":"Get the list of all the blueprints",
+			"request":
+			 {
+			 	"endpoint":"/blueprints",
+			 	"method":"GET"
+			 }
+		},
+		{
+			"Description":"Get a specific blueprint",
+			"request":
+			 {
+			 	"endpoint":"/blueprints?id=<blueprint_id>",
+			 	"method":"GET"
+			 }
+		},
+		{
+			"Description":"View a specific blueprint",
+			"request":
+			 {
+			 	"endpoint":"/viewblueprints?id=<blueprint_id>",
+			 	"method":"GET"
+			 }
+		},
+		{
+			"Description":"Delete a blueprint",
+			"request":
+			 {
+			 	"endpoint":"/blueprints/<blueprint_id>",
+			 	"method":"DELETE"
+			 }
+		},
+		{
+			"Description":"Upload a new  blueprints",
+			"request":
+			 {
+			 	"endpoint":"/blueprints",
+			 	"method":"POST",
+			 	"requestBodyType":"JSON",
+			 	"requestBody":
+			 	{
+			 		"blueprint_id":"<blueprint_id>",
+			 		"blueprint_filename":"<blueprint_filename>",
+			 		"zip_url":"<zip_url>"
+			 	}
+			 	
+			 }
+		},
+		{
+			"Description":"Get the list of all the deployments",
+			"request":
+			 {
+			 	"endpoint":"/deployments",
+			 	"method":"GET"
+			 }
+		},
+		{
+			"Description":"Get a specific deployment",
+			"request":
+			 {
+			 	"endpoint":"/deployments?id=<deployment_id>",
+			 	"method":"GET"
+			 }
+		},
+		{
+			"Description":"Delete a deployment",
+			"request":
+			 {
+			 	"endpoint":"/deployments/<deployment_id>",
+			 	"method":"DELETE"
+			 }
+		},
+		{
+			"Description":"Create a new deployment",
+			"request":
+			 {
+			 	"endpoint":"/deployments",
+			 	"method":"POST",
+			 	"requestBodyType":"JSON",
+			 	"requestBody":
+			 	{
+			 		"deployment_id":"<deployment_id>",
+			 		"blueprint_id":"<blueprint_id>",
+			 		"parameters":{
+			 			"Description":"all the parameters that are required as input for deploying blueprint"
+			 		}
+			 	}
+			 	
+			 }
+		},
+		{
+			"Description":"Get the list of all executions for a deployment",
+			"request":
+			 {
+			 	"endpoint":"/executions?deployment_id=<deployment-id>",
+			 	"method":"GET"
+			 }
+		},
+		{
+			"Description":"Get a specific execution for a specific deployment",
+			"request":
+			 {
+			 	"endpoint":"/executions/<execution_id>?deployment_id=<deployment-id>",
+			 	"method":"GET"
+			 }
+		},
+		{
+			"Description":"Cancel an execution",
+			"request":
+			 {
+			 	"endpoint":"/executions/<execution_id>?deployment_id=<deployment_id>&action=<cancel|force-cancel>",
+			 	"method":"DELETE"
+			 }
+		},
+		{
+			"Description":"Start an execution",
+			"request":
+			 {
+			 	"endpoint":"/executions",
+			 	"method":"POST",
+			 	"requestBodyType":"JSON",
+			 	"requestBody":
+			 	{
+			 		"deployment_id":"<deployment_id>",
+			 		"workflow_name":"<workflow_name>",
+			 		"allow_custom_parameter":"<true|false>",
+			 		"force":"<true|false>",
+			 		"parameters":{
+			 			"Description":"all the parameters that are required as input for starting an execution"
+			 		}
+			 	}
+			 	
+			 }
+		}
+		
+	]
+
+}

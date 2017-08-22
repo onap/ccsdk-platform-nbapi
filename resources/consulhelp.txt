@@ -1,0 +1,89 @@
+{
+  "items": [
+    {
+      "Description": "Get all the services",
+      "request": {
+        "endpoint": "/healthservices/services",
+        "method": "GET"
+      }
+    },
+    {
+      "Description": "Get all the nodes",
+      "request": {
+        "endpoint": "/healthservices/nodes",
+        "method": "GET"
+      }
+    },
+    {
+      "Description": "Get all the datacenters",
+      "request": {
+        "endpoint": "/healthservices/datacenters",
+        "method": "GET"
+      }
+    },
+    {
+      "Description": "Get all the health checks for the service",
+      "request": {
+        "endpoint": "/healthservices/services/<service_name>",
+        "method": "GET"
+      }
+    },
+    {
+      "Description": "Get all the health checks for the nodes",
+      "request": {
+        "endpoint": "/healthservices/nodes/<node_name>",
+        "method": "GET"
+      }
+    },
+    {
+      "Description": "Register a new service",
+      "request": {
+        "endpoint": "/healthservices/register",
+        "method": "POST",
+        "requestBodyType": "JSON",
+        "requestBody": {
+          "services": [
+            {
+              "id": "<service_id>",
+              "name": "<service_name>",
+              "tags": [
+                
+              ],
+              "address": "<service_address>",
+              "port": "<service_port>",
+              "checks": [
+                {
+                  "endpoint": "<http url for status>",
+                  "interval": "<frequency to check health> e.g. 10s|10m",
+                  "description": "<human readable description of the check",
+                  "name": "<name of the check>"
+                },
+                {
+                  "endpoint": "<http url for status>",
+                  "interval": "<frequency to check health> e.g. 10s|10m",
+                  "description": "<human readable description of the check",
+                  "name": "<name of the check>"
+                },
+                
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "Description": "Deregister a service",
+      "request": {
+        "endpoint": "/healthservices/register/<service_id>",
+        "method": "POST"
+      }
+    },
+    {
+      "Description": "Get Historical Data for a service",
+      "request": {
+        "endpoint": "/healthservices/svchist/<service_id>?start=yyyy-MM-dd'T'HH:mm:ss.SSZ&end=yyyy-MM-dd'T'HH:mm:ss.SSZ",
+        "method": "GET"
+      }
+    }
+  ]
+}

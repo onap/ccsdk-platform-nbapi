@@ -1,0 +1,18 @@
+{
+  "manager_ip": "",
+  "api_version": "v2.1",
+  "consul_ip": "1",
+  "consul_port": "8500",
+  "consul_api_version": "v1",
+  "mechid": "",
+  "pass": "",
+  "enableAuthetication": true,
+  "postgres_ip": "",
+  "postgres_port": "5432",
+  "postgres_db_name": "",
+  "postgres_db_user": "",
+  "postgres_db_passwd": "ecompcu",
+  "postgres_db_max_conn": "50",
+  "manager_username": "admin",
+  "manager_password": ""
+}
