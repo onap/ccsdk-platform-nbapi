@@ -26,7 +26,7 @@
 	<artifactId>commonnbapi</artifactId>
 	<version>0.0.3</version>
 	<packaging>war</packaging>
-	<name>commonnbapi</name>
+	<name>ccsdk-platform-nbapi</name>
 	<description>ECOMPAPI to expose Cloudify REST</description>
 
 	<build>
