@@ -21,6 +21,8 @@
  *******************************************************************************/
 package org.onap.ecomp.main.cloudify;
 
+import com.att.eelf.configuration.EELFLogger;
+import com.att.eelf.configuration.EELFManager;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -29,315 +31,275 @@ import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
+import org.apache.commons.codec.binary.Base64;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.onap.ecomp.main.APIHConfig;
 
-import com.att.eelf.configuration.EELFLogger;
-import com.att.eelf.configuration.EELFManager;
-
-import org.apache.commons.codec.binary.Base64;
-
 public class CloudifyClient {
 
-	private static CloudifyClient client = null;
-	final static EELFLogger logger = EELFManager.getInstance().getLogger(CloudifyClient.class);
-	HttpURLConnection connection = null;
+    private static final String MESSAGE = "message";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String RESPONSE_MSG = "responseMsg";
+    private static final String RESPONSE_CODE = "responseCode";
+    private static final String TIME_STAMP = "timestamp";
+    private static final String EXCEPTION_FOUND = "Exception found : ";
+    private static final String ERROR_RESPONSE_MSG = "Some Exception while retrieving the response ";
+    private static final int ERROR_RESPONSE_CODE = 500;
 
-	public static CloudifyClient getInstance() {
-		if (client == null)
-			return new CloudifyClient();
-		else
-			return client;
-	}
+    private static CloudifyClient client = null;
+    private static final EELFLogger logger = EELFManager.getInstance().getLogger(CloudifyClient.class);
+    private HttpURLConnection connection = null;
 
-	public JSONObject doGET(String urlString) {
+    public static CloudifyClient getInstance() {
+        if (client == null) {
+            return new CloudifyClient();
+        } else {
+            return client;
+        }
+    }
 
-		URL url;
-		JSONObject returnObj = null;
-		try {
-			urlString = getManagerID() + urlString;
-			url = new URL(urlString);
-			connection = (HttpURLConnection) url.openConnection();
-			connection.setRequestMethod("GET");
-			connection.setDoOutput(true);
-			connection.setConnectTimeout(10000);
-			connection.setReadTimeout(10000);
-			connection.setRequestProperty("Authorization", getAuthString());
+    public JSONObject doGET(String urlString) {
 
-			BufferedReader in = new BufferedReader(new InputStreamReader(
-					connection.getInputStream()));
-			StringBuilder check = new StringBuilder();
-			String inputLine;
+        URL url;
+        JSONObject returnObj;
+        try {
+            url = new URL(getManagerID() + urlString);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setDoOutput(true);
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+            connection.setRequestProperty(AUTHORIZATION, getAuthString());
 
-			while ((inputLine = in.readLine()) != null)
-				check.append(inputLine);
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder check = new StringBuilder();
+            String inputLine;
 
-			// get the Response code from the HTTP
-			int responseCode = connection.getResponseCode();
+            while ((inputLine = in.readLine()) != null) {
+                check.append(inputLine);
+            }
 
-			returnObj = new JSONObject();
-			returnObj.put("responseMsg",check.toString());
-			returnObj.put("responseCode", responseCode);
-			returnObj.put("timestamp", getCurrentDataAndTime());
-			return returnObj;
+            // get the Response code from the HTTP
+            int responseCode = connection.getResponseCode();
 
-		} catch (Exception e) {
-			logger.error("Exception found : " + e.getLocalizedMessage());
-			returnObj = new JSONObject();
-			String responseMsg = "";
-			int responseCode;
-			try {
-				responseMsg = connection.getResponseMessage();
-				JSONObject errorSteam = getErrorSteam();
-				if (errorSteam != null)
-					responseMsg = errorSteam.optString("message");
-				responseCode = connection.getResponseCode();
-				returnObj.put("responseMsg", responseMsg);
-				returnObj.put("responseCode", responseCode);
-			} catch (Exception e1) {
-				responseMsg = "Some Exception while retreiving the response";
-				responseCode = 500;
-			}
-			return returnObj;
-		}finally{
-			connection.disconnect();
-		}
-	}
+            returnObj = new JSONObject();
+            returnObj.put(RESPONSE_MSG, check.toString());
+            returnObj.put(RESPONSE_CODE, responseCode);
+            returnObj.put(TIME_STAMP, getCurrentDataAndTime());
+            in.close();
+            return returnObj;
+        } catch (Exception e) {
+            logger.error(EXCEPTION_FOUND + e.getLocalizedMessage(), e);
+            return buildReturnObjectWhenExceptionOccurred();
+        } finally {
+            connection.disconnect();
+        }
+    }
 
-	public JSONObject doPOST(String urlString, JSONObject outputJSON) {
-		URL url;
-		JSONObject returnObj = null;
-		try {
-			urlString = getManagerID() + urlString;
-			url = new URL(urlString);
-			connection = (HttpURLConnection) url.openConnection();
-			connection.setRequestMethod("POST");
-			connection.setDoOutput(true);
-			connection.setConnectTimeout(10000);
-			connection.setReadTimeout(10000);
-			connection.setRequestProperty("Authorization", getAuthString());
-			
-			connection.setRequestProperty("Content-Type", "application/json");
-			OutputStreamWriter out = new OutputStreamWriter(
-					connection.getOutputStream());
-			out.write(outputJSON.toString());
-			out.close();
+    public JSONObject doPOST(String urlString, JSONObject outputJSON) {
+        URL url;
+        JSONObject returnObj;
+        try {
+            url = new URL(getManagerID() + urlString);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+            connection.setRequestProperty(AUTHORIZATION, getAuthString());
 
-			BufferedReader in = new BufferedReader(new InputStreamReader(
-					connection.getInputStream()));
-			StringBuilder check = new StringBuilder();
-			String inputLine;
+            connection.setRequestProperty("Content-Type", "application/json");
+            OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
+            out.write(outputJSON.toString());
+            out.close();
 
-			while ((inputLine = in.readLine()) != null)
-				check.append(inputLine);
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder check = new StringBuilder();
+            String inputLine;
 
-			// get the Response code from the HTTP
-			int responseCode = connection.getResponseCode();
+            while ((inputLine = in.readLine()) != null) {
+                check.append(inputLine);
+            }
 
-			returnObj = new JSONObject();
-			returnObj.put("responseMsg",check.toString());
-			returnObj.put("responseCode", responseCode);
-			returnObj.put("timestamp", getCurrentDataAndTime());
+            // get the Response code from the HTTP
+            int responseCode = connection.getResponseCode();
 
-			return returnObj;
+            returnObj = new JSONObject();
+            returnObj.put(RESPONSE_MSG, check.toString());
+            returnObj.put(RESPONSE_CODE, responseCode);
+            returnObj.put(TIME_STAMP, getCurrentDataAndTime());
+            in.close();
 
-		} catch (Exception e) {
-			logger.error("Exception found : " + e.getLocalizedMessage());
-			returnObj = new JSONObject();
-			String responseMsg = "";
-			int responseCode;
-			try {
-				responseMsg = connection.getResponseMessage();
-				JSONObject errorSteam = getErrorSteam();
-				if (errorSteam != null)
-					responseMsg = errorSteam.optString("message");
-				responseCode = connection.getResponseCode();
-				returnObj.put("responseMsg", responseMsg);
-				returnObj.put("responseCode", responseCode);
-			} catch (Exception e1) {
-				responseMsg = "Some Exception while retreiving the response";
-				responseCode = 500;
-			}
-			return returnObj;
-		} finally{
-			connection.disconnect();
-		}
+            return returnObj;
+        } catch (Exception e) {
+            logger.error(EXCEPTION_FOUND + e.getLocalizedMessage());
+            return buildReturnObjectWhenExceptionOccurred();
+        } finally {
+            connection.disconnect();
+        }
+    }
 
-	}
+    public JSONObject doPUT(String urlString, JSONObject outputJson) {
 
-	public JSONObject doPUT(String urlString, JSONObject outputJson) {
+        URL url;
+        JSONObject returnObj;
+        try {
+            url = new URL(getManagerID() + urlString);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("PUT");
+            connection.setDoOutput(true);
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+            connection.setRequestProperty(AUTHORIZATION, getAuthString());
 
-		URL url;
-		JSONObject returnObj = null;
-		try {
-			urlString = getManagerID() + urlString;
-			url = new URL(urlString);
-			connection = (HttpURLConnection) url.openConnection();
-			connection.setRequestMethod("PUT");
-			connection.setDoOutput(true);
-			connection.setConnectTimeout(10000);
-			connection.setReadTimeout(10000);
-			connection.setRequestProperty("Authorization", getAuthString());
-			
-			if (outputJson != null) {
-				connection.setRequestProperty("Content-Type",
-						"application/json");
-				OutputStreamWriter out = new OutputStreamWriter(
-						connection.getOutputStream());
-				out.write(outputJson.toString());
-				out.close();
-			}
+            if (outputJson != null) {
+                connection.setRequestProperty("Content-Type",
+                    "application/json");
+                OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
+                out.write(outputJson.toString());
+                out.close();
+            }
 
-			System.out.println(connection.getResponseMessage());
-			BufferedReader in = new BufferedReader(new InputStreamReader(
-					connection.getInputStream()));
-			StringBuilder check = new StringBuilder();
-			String inputLine;
+            logger.info(connection.getResponseMessage());
+            BufferedReader in = new BufferedReader(new InputStreamReader(
+                connection.getInputStream()));
+            StringBuilder check = new StringBuilder();
+            String inputLine;
 
-			while ((inputLine = in.readLine()) != null)
-				check.append(inputLine);
+            while ((inputLine = in.readLine()) != null) {
+                check.append(inputLine);
+            }
 
-			// get the Response code from the HTTP
-			int responseCode = connection.getResponseCode();
+            // get the Response code from the HTTP
+            int responseCode = connection.getResponseCode();
 
-			returnObj = new JSONObject();
-			returnObj.put("responseMsg",check.toString());
-			returnObj.put("responseCode", responseCode);
-			returnObj.put("timestamp", getCurrentDataAndTime());
-			
-			return returnObj;
+            returnObj = new JSONObject();
+            returnObj.put(RESPONSE_MSG, check.toString());
+            returnObj.put(RESPONSE_CODE, responseCode);
+            returnObj.put(TIME_STAMP, getCurrentDataAndTime());
+            in.close();
 
-		} catch (Exception e) {
-			logger.error("Exception found : " + e.getLocalizedMessage());
-			returnObj = new JSONObject();
-			String responseMsg = "";
-			int responseCode;
-			try {
-				responseMsg = connection.getResponseMessage();
-				JSONObject errorSteam = getErrorSteam();
-				if (errorSteam != null)
-					responseMsg = errorSteam.optString("message");
-				responseCode = connection.getResponseCode();
-				returnObj.put("responseMsg", responseMsg);
-				returnObj.put("responseCode", responseCode);
-			} catch (Exception e1) {
-				responseMsg = "Some Exception while retreiving the response";
-				responseCode = 500;
-			}
-			return returnObj;
-		}finally{
-			connection.disconnect();
-		}
-	}
+            return returnObj;
+        } catch (Exception e) {
+            logger.error(EXCEPTION_FOUND + e.getLocalizedMessage());
+            return buildReturnObjectWhenExceptionOccurred();
+        } finally {
+            connection.disconnect();
+        }
+    }
 
-	public JSONObject doDELETE(String urlString) {
-		URL url;
-		JSONObject returnObj = null;
-		try {
-			urlString = getManagerID() + urlString;
-			url = new URL(urlString);
-			connection = (HttpURLConnection) url.openConnection();
-			connection.setRequestMethod("DELETE");
-			connection.setDoOutput(true);
-			connection.setConnectTimeout(10000);
-			connection.setReadTimeout(10000);
-			connection.setRequestProperty("Authorization", getAuthString());
-			
-			BufferedReader in = new BufferedReader(new InputStreamReader(
-					connection.getInputStream()));
-			StringBuilder check = new StringBuilder();
-			String inputLine;
+    public JSONObject doDELETE(String urlString) {
+        URL url;
+        JSONObject returnObj;
+        try {
+            url = new URL(getManagerID() + urlString);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("DELETE");
+            connection.setDoOutput(true);
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+            connection.setRequestProperty(AUTHORIZATION, getAuthString());
 
-			while ((inputLine = in.readLine()) != null)
-				check.append(inputLine);
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder check = new StringBuilder();
+            String inputLine;
 
-			// get the Response code from the HTTP
-			int responseCode = connection.getResponseCode();
+            while ((inputLine = in.readLine()) != null) {
+                check.append(inputLine);
+            }
 
-			returnObj = new JSONObject();
-			returnObj.put("responseMsg",check.toString());
-			returnObj.put("responseCode", responseCode);
-			returnObj.put("timestamp", getCurrentDataAndTime());
+            // get the Response code from the HTTP
+            int responseCode = connection.getResponseCode();
 
-			return returnObj;
+            returnObj = new JSONObject();
+            returnObj.put(RESPONSE_MSG, check.toString());
+            returnObj.put(RESPONSE_CODE, responseCode);
+            returnObj.put(TIME_STAMP, getCurrentDataAndTime());
 
-		} catch (Exception e) {
-			logger.error("Exception found : " + e.getLocalizedMessage());
-			returnObj = new JSONObject();
-			String responseMsg = "";
-			int responseCode;
-			try {
-				responseMsg = connection.getResponseMessage();
-				JSONObject errorSteam = getErrorSteam();
-				if (errorSteam != null)
-					responseMsg = errorSteam.optString("message");
-				responseCode = connection.getResponseCode();
-				returnObj.put("responseMsg", responseMsg);
-				returnObj.put("responseCode", responseCode);
-			} catch (Exception e1) {
-				responseMsg = "Some Exception while retreiving the response";
-				responseCode = 500;
-			}
-			return returnObj;
-		}finally{
-			connection.disconnect();
-		}
-	}
+            in.close();
+            return returnObj;
+        } catch (Exception e) {
+            logger.error(EXCEPTION_FOUND + e.getLocalizedMessage());
+            return buildReturnObjectWhenExceptionOccurred();
+        } finally {
+            connection.disconnect();
+        }
+    }
 
-	private String getCurrentDataAndTime() {
-		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		Date date = new Date();
-		return dateFormat.format(date);
-	}
+    private JSONObject buildReturnObjectWhenExceptionOccurred() {
+        JSONObject returnObj = new JSONObject();
+        String responseMsg;
+        int responseCode;
+        try {
+            responseMsg = connection.getResponseMessage();
+            JSONObject errorSteam = getErrorSteam();
+            if (errorSteam != null) {
+                responseMsg = errorSteam.optString(MESSAGE);
+            }
+            responseCode = connection.getResponseCode();
+            returnObj.put(RESPONSE_MSG, responseMsg);
+            returnObj.put(RESPONSE_CODE, responseCode);
+        } catch (Exception e1) {
+            responseMsg = ERROR_RESPONSE_MSG;
+            responseCode = ERROR_RESPONSE_CODE;
+            logger.error(responseMsg + responseCode, e1);
+        }
+        return returnObj;
+    }
 
-	private String getManagerID() {
-		String manager_ip = "";
-		String api_version = "";
-		manager_ip = APIHConfig.getInstance().getConfigObject().optString("manager_ip");
-		api_version = APIHConfig.getInstance().getConfigObject().optString("api_version");
-		return "http://" + manager_ip + "/api/" + api_version;
-	}
-	
-	private String getManagerUsername() {
-		String manager_username = "";
-		manager_username = APIHConfig.getInstance().getConfigObject().optString("manager_username");
-		return manager_username;
-	}
-	
-	private String getManagerPassword() {
-		String manager_password = "";
-		manager_password = APIHConfig.getInstance().getConfigObject().optString("manager_password");
-		return manager_password;
-	}
+    private String getCurrentDataAndTime() {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        Date date = new Date();
+        return dateFormat.format(date);
+    }
 
-	private String getAuthString(){
-		String username = getManagerUsername();
-		String password = getManagerPassword();
-		String authString = username + ":" + password;
-		byte[] authEncBytes = Base64.encodeBase64(authString.getBytes());
-		String authStringEnc = new String(authEncBytes);
-		return "Basic " + authStringEnc;
-	}
-	private JSONObject getErrorSteam() {
-		BufferedReader in = new BufferedReader(new InputStreamReader(
-				connection.getErrorStream()));
-		StringBuilder check = new StringBuilder();
-		try {
+    private String getManagerID() {
+        String managerIp;
+        String apiVersion;
+        managerIp = APIHConfig.getInstance().getConfigObject().optString("manager_ip");
+        apiVersion = APIHConfig.getInstance().getConfigObject().optString("api_version");
+        return "http://" + managerIp + "/api/" + apiVersion;
+    }
 
-			String inputLine;
-			while ((inputLine = in.readLine()) != null)
-				check.append(inputLine);
-		} catch (Exception ex) {
+    private String getManagerUsername() {
+        String managerUsername;
+        managerUsername = APIHConfig.getInstance().getConfigObject().optString("manager_username");
+        return managerUsername;
+    }
 
-		}
+    private String getManagerPassword() {
+        String managerPassword;
+        managerPassword = APIHConfig.getInstance().getConfigObject().optString("manager_password");
+        return managerPassword;
+    }
 
-		try {
-			return new JSONObject(check.toString());
-		} catch (JSONException e) {
-			return null;
-		}
-	}
+    private String getAuthString() {
+        String username = getManagerUsername();
+        String password = getManagerPassword();
+        String authString = username + ":" + password;
+        byte[] authEncBytes = Base64.encodeBase64(authString.getBytes());
+        String authStringEnc = new String(authEncBytes);
+        return "Basic " + authStringEnc;
+    }
 
+    private JSONObject getErrorSteam() {
+        StringBuilder check = new StringBuilder();
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(
+            connection.getErrorStream()))) {
+
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                check.append(inputLine);
+            }
+        } catch (Exception ex) {
+            logger.error(ex.getLocalizedMessage(), ex);
+        }
+
+        try {
+            return new JSONObject(check.toString());
+        } catch (JSONException e) {
+            return null;
+        }
+    }
 }
