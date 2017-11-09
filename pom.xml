@@ -24,7 +24,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.att.ecompcntr</groupId>
     <artifactId>commonnbapi</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4-SNAPSHOT</version>
     <packaging>war</packaging>
     <name>ccsdk-platform-nbapi</name>
     <description>ECOMPAPI to expose Cloudify REST</description>
